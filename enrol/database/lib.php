@@ -694,12 +694,15 @@ class enrol_database_plugin extends enrol_plugin {
         $shortname = trim($this->get_config('newcourseshortname'));
         $idnumber  = trim($this->get_config('newcourseidnumber'));
         $category  = trim($this->get_config('newcoursecategory'));
+        $templatecourse = trim($this->get_config('templatecourse'));
 
         // Lowercased versions - necessary because we normalise the resultset with array_change_key_case().
         $fullname_l  = strtolower($fullname);
         $shortname_l = strtolower($shortname);
         $idnumber_l  = strtolower($idnumber);
         $category_l  = strtolower($category);
+        $templatecourse_l  = strtolower($templatecourse);
+
 
         $localcategoryfield = $this->get_config('localcategoryfield', 'id');
         $defaultcategory    = $this->get_config('defaultcategory');
@@ -717,6 +720,9 @@ class enrol_database_plugin extends enrol_plugin {
         }
         if ($idnumber) {
             $sqlfields[] = $idnumber;
+        }
+        if ($templatecourse) {
+            $sqlfields[] = $templatecourse;
         }
         $sql = $this->db_get_sql($table, array(), $sqlfields, true);
         $createcourses = array();
@@ -742,6 +748,7 @@ class enrol_database_plugin extends enrol_plugin {
                     $course->fullname  = $fields[$fullname_l];
                     $course->shortname = $fields[$shortname_l];
                     $course->idnumber  = $idnumber ? $fields[$idnumber_l] : '';
+                    $course->templatecourse  = $templatecourse ? $fields[$templatecourse_l] : '';
                     if ($category) {
                         if (empty($fields[$category_l])) {
                             // Empty category means use default.
@@ -771,38 +778,37 @@ class enrol_database_plugin extends enrol_plugin {
         if ($createcourses) {
             require_once("$CFG->dirroot/course/lib.php");
 
-            $templatecourse = $this->get_config('templatecourse');
-
-            $template = false;
-            if ($templatecourse) {
-                if ($template = $DB->get_record('course', array('shortname'=>$templatecourse))) {
-                    $template = fullclone(course_get_format($template)->get_course());
-                    unset($template->id);
-                    unset($template->fullname);
-                    unset($template->shortname);
-                    unset($template->idnumber);
-                } else {
-                    $trace->output("can not find template for new course!", 1);
-                }
-            }
-            if (!$template) {
-                $courseconfig = get_config('moodlecourse');
-                $template = new stdClass();
-                $template->summary        = '';
-                $template->summaryformat  = FORMAT_HTML;
-                $template->format         = $courseconfig->format;
-                $template->newsitems      = $courseconfig->newsitems;
-                $template->showgrades     = $courseconfig->showgrades;
-                $template->showreports    = $courseconfig->showreports;
-                $template->maxbytes       = $courseconfig->maxbytes;
-                $template->groupmode      = $courseconfig->groupmode;
-                $template->groupmodeforce = $courseconfig->groupmodeforce;
-                $template->visible        = $courseconfig->visible;
-                $template->lang           = $courseconfig->lang;
-                $template->groupmodeforce = $courseconfig->groupmodeforce;
-            }
-
             foreach ($createcourses as $fields) {
+                $templatecourse = $fields->templatecourse;
+                $template = false;
+                if ($templatecourse) {
+                    if ($template = $DB->get_record('course', array('shortname'=>$templatecourse))) {
+                        $template = fullclone(course_get_format($template)->get_course());
+                        unset($template->id);
+                        unset($template->fullname);
+                        unset($template->shortname);
+                        unset($template->idnumber);
+                    } else {
+                        $trace->output("can not find template for new course!", 1);
+                    }
+                }
+                if (!$template) {
+                    $courseconfig = get_config('moodlecourse');
+                    $template = new stdClass();
+                    $template->summary        = '';
+                    $template->summaryformat  = FORMAT_HTML;
+                    $template->format         = $courseconfig->format;
+                    $template->newsitems      = $courseconfig->newsitems;
+                    $template->showgrades     = $courseconfig->showgrades;
+                    $template->showreports    = $courseconfig->showreports;
+                    $template->maxbytes       = $courseconfig->maxbytes;
+                    $template->groupmode      = $courseconfig->groupmode;
+                    $template->groupmodeforce = $courseconfig->groupmodeforce;
+                    $template->visible        = $courseconfig->visible;
+                    $template->lang           = $courseconfig->lang;
+                    $template->groupmodeforce = $courseconfig->groupmodeforce;
+                }
+
                 $newcourse = clone($template);
                 $newcourse->fullname  = $fields->fullname;
                 $newcourse->shortname = $fields->shortname;
