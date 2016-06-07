@@ -721,8 +721,10 @@ class enrol_database_plugin extends enrol_plugin {
         if ($idnumber) {
             $sqlfields[] = $idnumber;
         }
-        if ($templatecourse) {
-            $sqlfields[] = $templatecourse;
+        if ($this->get_config('templateisdbfield')) {
+        	if ($templatecourse) {
+        		$sqlfields[] = $templatecourse;
+        	}
         }
         $sql = $this->db_get_sql($table, array(), $sqlfields, true);
         $createcourses = array();
@@ -748,7 +750,15 @@ class enrol_database_plugin extends enrol_plugin {
                     $course->fullname  = $fields[$fullname_l];
                     $course->shortname = $fields[$shortname_l];
                     $course->idnumber  = $idnumber ? $fields[$idnumber_l] : '';
-                    $course->templatecourse  = $templatecourse ? $fields[$templatecourse_l] : '';
+                    if($templatecourse) {
+                    	if($this->get_config('templateisdbfield')) {
+                    		$course->templatecourse = $fields[$templatecourse_l];
+                    	} else {
+                    		$course->templatecourse = $templatecourse;
+                    	}
+                    } else {
+                    	$course->templatecourse = '';
+                    }
                     if ($category) {
                         if (empty($fields[$category_l])) {
                             // Empty category means use default.
